@@ -3,7 +3,7 @@ const { PRODUCT_TBL, PRODUCT_TYPES_TBL, PRODUCT_ATTR_TBL, ATTRIBUTES_TBL, TABLE_
 const db = require("../../db")
 
 const _ = require("lodash");
-const { insertObjectQuery, selectQuery, updateQuery } = require("../../helper/queryhelper");
+const { insertObjectQuery, selectQuery, updateQuery, deleteQuery } = require("../../helper/queryhelper");
 
 const getAllProducts = async (req, res, next) => {
 
@@ -101,24 +101,13 @@ const updateProduct=async(req,res,next)=>{
     // Some are of products Table
     let productsAttr=_.pick(req.body , TABLE_COLS.products);
 
-    let productId=productsAttr.product_id;
+    let productId=req.params.productId;
 
     // Update products tabel and insert these productsAttr there 
 
     let updateProductsQry=updateQuery(PRODUCT_TBL,productsAttr,{product_id:productId})
 
     let result1= await  client.query(updateProductsQry)
-
-
-    console.log("Result 1 is ---");
-    console.log(result1)
-
-    console.log("updateProductsQry--");
-    console.log(updateProductsQry)
-
-    
-
-
 
 
     // Some attributes are  in attributes table (where product_type= req.body.product_type)
@@ -137,21 +126,18 @@ const updateProduct=async(req,res,next)=>{
 
     let otherAttributes = _.pick(req.body, otherattributeArray)
 
-    console.log("other Attr--");
-    console.log(otherAttr);
+    // console.log("other Attr--");
+    // console.log(otherAttr);
     // [
     //     { attribute_id: 1, product_type_id: 1, attribute_name: 'Size' },
     //     { attribute_id: 2, product_type_id: 1, attribute_name: 'Color' }
     //   ]
 
-    console.log("otherattributeArray---");  
-    console.log(otherattributeArray);     // [ 'Size', 'Color' ]
+    // console.log("otherattributeArray---");  
+    // console.log(otherattributeArray);     // [ 'Size', 'Color' ]
 
-    console.log("otherAttributes--");
-    console.log(otherAttributes)      // { Size: [ 'L', 'M' ], Color: [ 'Red', 'yello', 'Blue' ] }
-
-
-
+    // console.log("otherAttributes--");
+    // console.log(otherAttributes)      // { Size: [ 'L', 'M' ], Color: [ 'Red', 'yello', 'Blue' ] }
     // 
     let promises = [];
 
@@ -163,19 +149,19 @@ const updateProduct=async(req,res,next)=>{
 
         let q= updateQuery(PRODUCT_ATTR_TBL,{attribute_value:attr_value},{product_id:productId,attribute_id:attr_id})
 
-        console.log("Q is ")
-        console.log(q)
+        // console.log("Q is ")
+        // console.log(q)
 
-       
+
         promises.push(client.query(q))
     }
        await  Promise.all(promises)
-
-    
        await client.query('COMMIT')
 
-    res.send(otherAttributes)
+       req.data="Update Successful";
+       next();
 
+    
     }catch(e){
 
         console.log(e)
@@ -184,19 +170,51 @@ const updateProduct=async(req,res,next)=>{
         next();
 
     }finally{
-
         client.release()
-
     }
-
-
-
-
-
-    
-
-
 
 }
 
-module.exports = { getAllProducts, addProduct,updateProduct }
+
+
+
+
+const deleteProduct=async(req,res,next)=>{
+
+    let client = await db.pool.connect();
+
+    try {
+      await client.query("BEGIN")
+
+      let productId = req.params.productId;
+        let condition = {
+            product_id: productId
+        };
+
+        let prodAttrQuery = deleteQuery(PRODUCT_ATTR_TBL, condition);
+        let delProdQuery = deleteQuery(PRODUCT_TBL, condition);
+
+         
+         if(prodAttrQuery)
+        await client.query(prodAttrQuery)
+
+        if(delProdQuery)
+        await client.query(delProdQuery)
+
+
+      await client.query("COMMIT")
+
+      req.data="Deleted Successfully"
+      next();
+    }catch(e){
+
+        console.log(e)
+        await client.query("ROLLBACK")
+        req.error=e;
+        res.send("ok")
+
+    }finally{
+        client.release();
+    }
+}
+module.exports = { getAllProducts, addProduct,updateProduct,deleteProduct }
