@@ -95,9 +95,7 @@ const updateProduct=async(req,res,next)=>{
     let client= await db.pool.connect()
 
     try{
-
          await client.query("BEGIN")
-
     //  In Body have I Have 2 kind of Attributes 
 
     // Some are of products Table
@@ -174,13 +172,14 @@ const updateProduct=async(req,res,next)=>{
        await  Promise.all(promises)
 
     
+       await client.query('COMMIT')
 
     res.send(otherAttributes)
 
     }catch(e){
 
         console.log(e)
-        client.query("ROLLBACK")
+        await client.query("ROLLBACK")
         req.error = e;
         next();
 
