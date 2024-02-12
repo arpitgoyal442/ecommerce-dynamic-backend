@@ -1,11 +1,16 @@
-const PRODUCT_TBL='product'
+const PRODUCT_TBL='products'
+const PRODUCT_TYPES_TBL='product_types'
 
-const DB_TABLES_COLS={
+const PRODUCT_ATTR_TBL='product_attributes'
 
+const ATTRIBUTES_TBL='attributes'
 
-    product:['title','stock','price','description','product_type_id'],
-    clothes:['title','size']
+const TABLE_COLS={
+
+    products:['product_id','product_name','product_type_id','price','description']
 }
 
 
-module.exports={PRODUCT_TBL,DB_TABLES_COLS}
+
+
+module.exports={PRODUCT_TBL,PRODUCT_ATTR_TBL,PRODUCT_TYPES_TBL,ATTRIBUTES_TBL,TABLE_COLS}
