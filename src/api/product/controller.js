@@ -42,6 +42,14 @@ const addProduct = async (req, res, next) => {
     let client=await db.pool.connect();
     try {
         await  client.query('BEGIN')
+
+
+        console.log("Req AWS URLS----")
+        console.log("Req.awsurls")
+
+        console.log(req.awsUrls)
+
+       
         let productAttr = _.pick(req.body, TABLE_COLS.products)
 
         let q = insertObjectQuery(PRODUCT_TBL, productAttr)
