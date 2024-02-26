@@ -5,17 +5,16 @@ const db = require("../../db")
 const _ = require("lodash");
 const { insertObjectQuery, selectQuery, updateQuery, deleteQuery } = require("../../helper/queryhelper");
 
-const getAllProducts = async (req, res, next) => {
+const getProducts = async (req, res, next) => {
 
     try {
 
+        console.log("Inside GetProducts")
+        let productId = req.params.productId;
         let pageNumber=req.query?.page;
         let offset=0;
-
         if(pageNumber)
             offset= (pageNumber-1)*ITEM_PER_PAGE ;
-        
-
         let query = {
 
         text: `SELECT
@@ -28,11 +27,16 @@ const getAllProducts = async (req, res, next) => {
         JOIN
         ${PRODUCT_ATTR_TBL} pa ON p.product_id = pa.product_id
         JOIN
-        ${ATTRIBUTES_TBL} a ON pa.attribute_id = a.attribute_id
-        GROUP BY
-        p.product_id, p.product_name, pt.product_type_name` + (pageNumber? ` offset ${offset} limit ${ITEM_PER_PAGE}`:``) ,
+        ${ATTRIBUTES_TBL} a ON pa.attribute_id = a.attribute_id`
+        +
 
-        values: []
+        (productId?(` where p.product_id=$1`):`` )+
+        
+        ` GROUP BY
+        p.product_id, p.product_name, pt.product_type_name` 
+        + (pageNumber? ` offset ${offset} limit ${ITEM_PER_PAGE}`:``) ,
+
+        values:  productId?[productId]:[]
         }
 
         console.log(query)
@@ -241,4 +245,4 @@ const deleteProduct = async (req, res, next) => {
         client.release();
     }
 }
-module.exports = { getAllProducts, addProduct, updateProduct, deleteProduct }
+module.exports = { getProducts, addProduct, updateProduct, deleteProduct }
