@@ -1,18 +1,12 @@
 const { CART_TBL } = require("../../constant/constant");
 const db = require("../../db");
-const { selectQuery } = require("../../helper/queryhelper");
-
-
-
+const {  updateQuery, deleteQuery } = require("../../helper/queryhelper");
 
 const getCartItems=async(req,res,next)=>{
-
     try{
-
         let userId=req.params.userId;
 
         let qry={
-
             text:`SELECT  
                     p.*,c.quantity,
                     pt.product_type_name,
@@ -27,11 +21,12 @@ const getCartItems=async(req,res,next)=>{
                     JOIN
                     attributes a ON pa.attribute_id = a.attribute_id where c.user_id=$1 GROUP BY
                     p.product_id, p.product_name, pt.product_type_name ,c.quantity`,
-
              values:[userId]
         }
 
-        db.query(qry)
+        let result= await db.query(qry);
+
+        res.send(result.rows)
 
     }catch(e){
         req.error=e;
@@ -41,10 +36,61 @@ const getCartItems=async(req,res,next)=>{
 }
 
 
-const updateCart=async()=>{
+const updateCart=async(req,res,next)=>{
+
+    try{
+        let userId=req.params.userId*1;
+        const {product_id , quantity}=req.body
+        let qry;
+
+        // if only product_id   --- Add to Cart with qty=1
+        if(quantity==null)
+        {
+            // Insert if Not already present in db
+           qry={
+                 text:`Insert into ${CART_TBL}(user_id,product_id,quantity) values($1,$2,$3) 
+                  ON CONFLICT(user_id,product_id) DO NOTHING`,
+                 values:[userId,product_id,1]
+                }
+        }
 
 
-    // if only product_id   --- Add to Cart with qty=1
-    //  if product_id  && qty  --- Update  product qty
-   // if product_id && qty==0    ---Remove product from that cart
+        //  if product_id  && qty  --- Update  product qty
+         else{
+            let condtn={
+                user_id:userId,
+                product_id:product_id
+            }
+            if(quantity!=0)
+            qry=updateQuery(CART_TBL,{quantity:quantity},condtn)
+
+            // if product_id && qty==0    ---Remove product from that cart
+            else
+            qry=deleteQuery(CART_TBL,condtn)
+        }
+
+        console.log("Query---");
+        console.log(qry)
+
+        let result=await db.query(qry);
+        console.log(result)
+
+        req.data={
+            qry:result.command,
+            rowCount:result.rowCount
+        }
+        next();
+
+    }catch(e){
+        console.log(e)
+        req.error=e;
+        next();
+    }
+}
+
+
+module.exports={
+
+    getCartItems,
+    updateCart
 }
